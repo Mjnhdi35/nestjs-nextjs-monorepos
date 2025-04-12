@@ -2,3 +2,7 @@ node_modules
 dist
 .next
 .env
+
+
+.nx/cache
+.nx/workspace-data
