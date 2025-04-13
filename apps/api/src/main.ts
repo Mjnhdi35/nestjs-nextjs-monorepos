@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core'
 import { ConfigService } from '@nestjs/config'
-import cookieParser from 'cookie-parser'
-import session from 'express-session'
+import * as cookieParser from 'cookie-parser'
+import * as session from 'express-session'
 import { CoreModule } from './core/core.module'
 import { ValidationPipe } from '@nestjs/common'
 import { ms, type StringValue } from './shared/utils/ms.util'
@@ -14,9 +14,11 @@ async function bootstrap() {
 
   const config = app.get(ConfigService)
   const redis = app.get(RedisService)
+
   app.use(cookieParser(config.getOrThrow<string>('COOKIES_SECRET')))
 
   app.useGlobalPipes(new ValidationPipe({ transform: true }))
+
   app.use(
     session({
       secret: config.getOrThrow<string>('SESSION_SECRET'),
@@ -36,8 +38,23 @@ async function bootstrap() {
       }),
     }),
   )
+
   app.enableCors({
-    origin: config.getOrThrow<string>('ALLOWED_ORIGIN'),
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      const allowed = [
+        new URL(config.getOrThrow<string>('ALLOWED_ORIGIN_FE')).origin,
+        new URL(config.getOrThrow<string>('ALLOWED_ORIGIN_GRAPHQL_STUDIO'))
+          .origin,
+      ]
+      if (!origin || allowed.includes(origin)) {
+        callback(null, true)
+      } else {
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
     credentials: true,
     exposedHeaders: ['set-cookie'],
   })
