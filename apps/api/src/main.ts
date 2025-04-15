@@ -1,13 +1,13 @@
 import { NestFactory } from '@nestjs/core'
 import { ConfigService } from '@nestjs/config'
+import { RedisService } from './core/redis/redis.service'
+import { RedisStore } from 'connect-redis'
 import * as cookieParser from 'cookie-parser'
 import * as session from 'express-session'
 import { CoreModule } from './core/core.module'
 import { ValidationPipe } from '@nestjs/common'
 import { ms, type StringValue } from './shared/utils/ms.util'
 import { parseBoolean } from './shared/utils/parse-boolean.util'
-import { RedisService } from './core/redis/redis.service'
-import { RedisStore } from 'connect-redis'
 
 async function bootstrap() {
   const app = await NestFactory.create(CoreModule)
@@ -40,24 +40,25 @@ async function bootstrap() {
   )
 
   app.enableCors({
-    origin: (
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void,
-    ) => {
-      const allowed = [
-        new URL(config.getOrThrow<string>('ALLOWED_ORIGIN_FE')).origin,
-        new URL(config.getOrThrow<string>('ALLOWED_ORIGIN_GRAPHQL_STUDIO'))
-          .origin,
-      ]
-      if (!origin || allowed.includes(origin)) {
-        callback(null, true)
-      } else {
-        callback(new Error('Not allowed by CORS'))
-      }
-    },
+    // origin: (
+    //   origin: string | undefined,
+    //   callback: (err: Error | null, allow?: boolean) => void,
+    // ) => {
+    //   const allowed = [
+    //     new URL(config.getOrThrow<string>('ALLOWED_ORIGIN_FE')).origin,
+    //     new URL(config.getOrThrow<string>('ALLOWED_ORIGIN_GRAPHQL_STUDIO'))
+    //       .origin,
+    //   ]
+    //   if (!origin || allowed.includes(origin)) {
+    //     callback(null, true)
+    //   } else {
+    //     callback(new Error('Not allowed by CORS'))
+    //   }
+    // },
+    origin: config.getOrThrow<string>('ALLOWED_ORIGIN_FE'),
     credentials: true,
     exposedHeaders: ['set-cookie'],
   })
   await app.listen(config.getOrThrow<number>('APPLICATION_PORT'))
 }
-bootstrap()
+void bootstrap()
